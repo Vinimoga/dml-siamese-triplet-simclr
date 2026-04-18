@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from loss import ContrastiveLoss
+from loss import ContrastiveLoss, NTXentLoss
 
 class MLP(nn.Module):
     """A simple Multi Layer perceptron for the
@@ -14,6 +14,9 @@ class MLP(nn.Module):
             dropout=0.5,
     ):
         super(MLP, self).__init__()
+        self.output_dim = output_dim
+        self.input_dim = input_dim
+
         self.dropout = nn.Dropout(dropout)
         self.input_layer = nn.Linear(input_dim, hidden_dim)
         self.hidden_layer = nn.Linear(hidden_dim, hidden_dim)
@@ -40,6 +43,8 @@ class LeNet(nn.Module):
     purpose of testing very simple arquitetures"""
     def __init__(self, input_dim, output_dim=1):
         super(LeNet, self).__init__()
+        self.output_dim = output_dim
+        self.input_dim = input_dim
 
         self.conv1 = nn.Conv2d(input_dim, 6, kernel_size=5)
         self.conv2 = nn.Conv2d(6, 16, kernel_size=5)
@@ -77,6 +82,8 @@ class AlexNet(nn.Module):
        to a 28x28 or 32x32 from mnist and cifar"""
     def __init__(self, input_dim, output_dim=1):
         super(AlexNet, self).__init__()
+        self.output_dim = output_dim
+        self.input_dim = input_dim
 
         self.convs = nn.Sequential(
             nn.Conv2d(input_dim, 96, kernel_size=3, stride=1, padding=1),  # mudou de 11x11
@@ -170,4 +177,43 @@ class SiameseNetwork(BaseModel):
     
     def __name__(self):
         return f"SiameseNetwork"
-    
+
+class SimCLR(BaseModel):
+    #Based on https://github.com/Spijkervet/SimCLR and https://arxiv.org/pdf/2002.05709.pdf
+    def __init__(self, backbone, projection_dim=64, temperature=0.5):
+        super().__init__()
+
+        self.backbone = backbone
+        self.projector = nn.Sequential(
+            nn.Linear(backbone.output_dim, 128),
+            nn.ReLU(),
+            nn.Linear(128, projection_dim)
+        )
+
+        self.criterion = NTXentLoss(temperature)
+
+    def embed(self, x):
+        return self.backbone(x)
+
+    def project(self, z):
+        return self.projector(z)
+
+    def forward(self, x1, x2):
+        h1 = self.embed(x1)
+        h2 = self.embed(x2)
+
+        z1 = self.project(h1)
+        z2 = self.project(h2)
+
+        return z1, z2
+
+    def training_step(self, batch):
+        x1, x2, _ = batch # label is not used in SimCLR (self-supervised)
+
+        z1, z2 = self(x1, x2)
+        loss = self.criterion(z1, z2)
+
+        return loss
+
+    def __name__(self):
+        return "SimCLR"

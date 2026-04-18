@@ -2,6 +2,7 @@
 import random
 import torch
 from torch.utils.data import Dataset
+import torchvision.transforms as T
 
 class TripletDataset(Dataset):
     def __init__(self, base_dataset):
@@ -84,3 +85,34 @@ class SiameseDataset(Dataset):
 
         return img1, img2, torch.tensor(label, dtype=torch.float32)
 
+class SimCLRDataset(Dataset):
+    #Based on https://github.com/Spijkervet/SimCLR and https://arxiv.org/pdf/2002.05709.pdf
+    def __init__(self, base_dataset, transform=None):
+        self.dataset = base_dataset
+        if transform is None:
+            self.transform = self.get_simclr_transform()
+        else:
+            self.transform = transform
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, idx):
+        x, _ = self.dataset[idx]
+
+        x1 = self.transform(x)
+        x2 = self.transform(x)
+
+        return x1, x2
+    
+    def get_simclr_transform(self, size=32):
+        return T.Compose([
+            T.RandomResizedCrop(size),
+            T.RandomHorizontalFlip(),
+            T.RandomApply([
+                T.ColorJitter(0.4, 0.4, 0.4, 0.1)
+            ], p=0.8),
+            T.RandomGrayscale(p=0.2),
+            T.GaussianBlur(kernel_size=3),
+            T.ToTensor(),
+        ])
