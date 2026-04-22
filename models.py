@@ -217,3 +217,47 @@ class SimCLRNetwork(BaseModel):
 
     def __name__(self):
         return "SimCLR"
+
+class SupConNetwork(BaseModel):
+    # Based on SimCLR architecture, but uses SupConLoss
+    def __init__(self, backbone, projection_dim=64, temperature=0.5):
+        super().__init__()
+
+        self.backbone = backbone
+        self.projector = nn.Sequential(
+            nn.Linear(backbone.output_dim, 128),
+            nn.ReLU(),
+            nn.Linear(128, projection_dim)
+        )
+
+        from loss import SupConLoss
+        self.criterion = SupConLoss(temperature)
+
+    def embed(self, x):
+        return self.backbone(x)
+
+    def project(self, z):
+        return self.projector(z)
+
+    def forward(self, x1, x2):
+        h1 = self.embed(x1)
+        h2 = self.embed(x2)
+
+        z1 = self.project(h1)
+        z2 = self.project(h2)
+
+        return z1, z2
+
+    def training_step(self, batch):
+        x1, x2, label = batch
+
+        z1, z2 = self(x1, x2)
+        
+        features = torch.stack([z1, z2], dim=1)
+
+        loss = self.criterion(features, label)
+
+        return loss
+
+    def __name__(self):
+        return "SupConNetwork"

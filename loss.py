@@ -57,3 +57,62 @@ class NTXentLoss(torch.nn.Module):
         loss = loss.mean()
 
         return loss
+        
+class SupConLoss(nn.Module):
+    """
+    Supervised Contrastive Learning Loss
+    Based on https://arxiv.org/pdf/2004.11362.pdf
+    """
+    def __init__(self, temperature=0.5):
+        super(SupConLoss, self).__init__()
+        self.temperature = temperature
+
+    def forward(self, features, labels):
+        device = features.device
+        batch_size = features.shape[0]
+        
+        # features is expected to be of shape [batch_size, n_views, embed_dim]
+        # For SupCon, usually n_views = 2 (x1 and x2)
+        labels = labels.contiguous().view(-1, 1)
+        mask = torch.eq(labels, labels.T).float().to(device)
+
+        contrast_count = features.shape[1]
+        contrast_feature = torch.cat(torch.unbind(features, dim=1), dim=0)
+        
+        contrast_feature = F.normalize(contrast_feature, dim=1)
+
+        anchor_feature = contrast_feature
+        anchor_count = contrast_count
+
+        mask = mask.repeat(anchor_count, contrast_count)
+        
+        logits = torch.div(
+            torch.matmul(anchor_feature, contrast_feature.T),
+            self.temperature)
+
+        # for numerical stability
+        logits_max, _ = torch.max(logits, dim=1, keepdim=True)
+        logits = logits - logits_max.detach()
+
+        # mask-out self-contrast cases
+        logits_mask = torch.scatter(
+            torch.ones_like(mask),
+            1,
+            torch.arange(batch_size * anchor_count).view(-1, 1).to(device),
+            0
+        )
+        mask = mask * logits_mask
+
+        exp_logits = torch.exp(logits) * logits_mask
+        # +1e-9 to prevent log(0)
+        log_prob = logits - torch.log(exp_logits.sum(1, keepdim=True) + 1e-9)
+
+        mask_sum = mask.sum(1)
+        # Avoid division by zero if a class only has 1 sample in the batch
+        mask_sum = torch.where(mask_sum == 0, torch.ones_like(mask_sum), mask_sum)
+        mean_log_prob_pos = (mask * log_prob).sum(1) / mask_sum
+
+        # loss
+        loss = - mean_log_prob_pos
+        loss = loss.mean()
+        return loss
