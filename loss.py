@@ -19,6 +19,13 @@ class ContrastiveLoss(nn.Module):
         return loss_contrastive
 
 class NTXentLoss(torch.nn.Module):
+    """
+    NT-Xent Loss for Contrastive Learning
+    based on:
+    https://towardsdatascience.com/nt-xent-normalized-temperature-scaled-cross-entropy-loss-explained-and-implemented-in-pytorch-cc081f69848/
+    https://github.com/dhruvbird/ml-notebooks/blob/main/nt-xent-loss/NT-Xent%20Loss.ipynb
+    
+    """
     def __init__(self, temperature=0.5):
         super().__init__()
         self.temperature = temperature
@@ -33,18 +40,20 @@ class NTXentLoss(torch.nn.Module):
 
         sim_matrix = torch.matmul(z, z.T) / self.temperature
 
-        # remove self-similarity
         mask = torch.eye(2 * batch_size, dtype=torch.bool).to(z.device)
-        sim_matrix = sim_matrix.masked_fill(mask, -9e15)
+        sim_matrix.masked_fill_(mask, -9e15) #sim_matrix = sim_matrix.masked_fill(mask, -9e15)
 
-        # positivos: i com i+batch_size
         positives = torch.cat([
             torch.diag(sim_matrix, batch_size),
             torch.diag(sim_matrix, -batch_size)
         ])
 
-        labels = torch.arange(2 * batch_size).to(z.device)
-        labels = (labels + batch_size) % (2 * batch_size)
+        exp_sim = torch.exp(sim_matrix)
 
-        loss = F.cross_entropy(sim_matrix, labels)
+        denom = exp_sim.sum(dim=1)
+
+        loss = -torch.log(torch.exp(positives) / denom)
+
+        loss = loss.mean()
+
         return loss

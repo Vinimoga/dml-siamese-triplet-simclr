@@ -107,7 +107,8 @@ class SimCLRDataset(Dataset):
     
     def get_simclr_transform(self, size=32):
         return T.Compose([
-            T.RandomResizedCrop(size),
+            T.ToPILImage(),
+            T.RandomResizedCrop(size, scale=(0.5, 1.0)), # min 0.5 to garantee that the image remain visible
             T.RandomHorizontalFlip(),
             T.RandomApply([
                 T.ColorJitter(0.4, 0.4, 0.4, 0.1)
@@ -116,3 +117,12 @@ class SimCLRDataset(Dataset):
             T.GaussianBlur(kernel_size=3),
             T.ToTensor(),
         ])
+
+class SupConDataset(SimCLRDataset):
+    def __getitem__(self, idx):
+        x, label = self.dataset[idx]
+
+        x1 = self.transform(x)
+        x2 = self.transform(x)
+
+        return x1, x2, label

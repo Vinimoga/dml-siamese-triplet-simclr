@@ -178,7 +178,7 @@ class SiameseNetwork(BaseModel):
     def __name__(self):
         return f"SiameseNetwork"
 
-class SimCLR(BaseModel):
+class SimCLRNetwork(BaseModel):
     #Based on https://github.com/Spijkervet/SimCLR and https://arxiv.org/pdf/2002.05709.pdf
     def __init__(self, backbone, projection_dim=64, temperature=0.5):
         super().__init__()
@@ -208,7 +208,7 @@ class SimCLR(BaseModel):
         return z1, z2
 
     def training_step(self, batch):
-        x1, x2, _ = batch # label is not used in SimCLR (self-supervised)
+        x1, x2 = batch
 
         z1, z2 = self(x1, x2)
         loss = self.criterion(z1, z2)
