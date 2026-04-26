@@ -118,6 +118,12 @@ class SimCLRDataset(Dataset):
             T.ToTensor(),
         ])
 
+    def get_identity_transform(self):
+        # Return image as is
+        return T.Compose([
+            T.Lambda(lambda x: x)
+        ])
+
 class SupConDataset(SimCLRDataset):
     def __getitem__(self, idx):
         x, label = self.dataset[idx]
