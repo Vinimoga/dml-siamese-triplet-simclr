@@ -1,0 +1,14 @@
+{
+    "dataset": , //CIFAR10 or MNIST
+    "image_channels": , //3 or 1
+    "model": "triplet",
+    "backbone": , //AlexNet or LeNet
+    "batch_size": , //64
+    "epochs": , //1
+    "lr": , //0.001
+    "embedding_dim": , //128
+    "margin": , //1.0
+    "optimizer": , //adam
+    "device": "cuda",
+    "save_path": "models/"
+}
