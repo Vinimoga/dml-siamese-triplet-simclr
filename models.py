@@ -138,13 +138,13 @@ class TripletNetwork(BaseModel):
         self.criterion = criterion
 
     def forward(self, a, p, n):
-        za = self.backbone(a)
-        zp = self.backbone(p)
-        zn = self.backbone(n)
+        za = F.normalize(self.backbone(a), p=2, dim=1) #To avoid model collapse
+        zp = F.normalize(self.backbone(p), p=2, dim=1)
+        zn = F.normalize(self.backbone(n), p=2, dim=1)
         return za, zp, zn
     
     def embed(self, x):
-        return self.backbone(x)
+        return F.normalize(self.backbone(x), p=2, dim=1)  #To avoid model collapse
 
     def training_step(self, batch):
         a, p, n = batch
@@ -156,18 +156,18 @@ class TripletNetwork(BaseModel):
         return f"TripletNetwork"
     
 class SiameseNetwork(BaseModel):
-    def __init__(self, backbone, criterion = ContrastiveLoss()):
+    def __init__(self, backbone, criterion = ContrastiveLoss(margin=1.0)):
         super().__init__()
         self.backbone = backbone
         self.criterion = criterion
 
     def forward(self, x1, x2):
-        z1 = self.backbone(x1)
-        z2 = self.backbone(x2)
+        z1 = F.normalize(self.backbone(x1), p=2, dim=1) #To avoid model collapse
+        z2 = F.normalize(self.backbone(x2), p=2, dim=1)
         return z1, z2
     
     def embed(self, x):
-        return self.backbone(x)
+        return F.normalize(self.backbone(x), p=2, dim=1) #To avoid model collapse
 
     def training_step(self, batch):
         x1, x2, label = batch

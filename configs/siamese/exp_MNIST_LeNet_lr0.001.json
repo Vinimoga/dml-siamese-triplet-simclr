@@ -1,0 +1,14 @@
+{
+    "dataset": "MNIST",
+    "image_channels": 1,
+    "model": "siamese",
+    "backbone": "LeNet",
+    "batch_size": 64,
+    "epochs": 5,
+    "lr": 0.001,
+    "embedding_dim": 128,
+    "margin": 1.0,
+    "optimizer": "adam",
+    "device": "cuda",
+    "save_path": "models/"
+}
