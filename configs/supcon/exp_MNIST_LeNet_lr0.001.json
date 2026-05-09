@@ -1,14 +1,14 @@
 {
-    "dataset": "CIFAR10",
-    "image_channels": 3,
-    "model": "siamese",
-    "backbone": "AlexNet",
+    "dataset": "MNIST",
+    "image_channels": 1,
+    "model": "supcon",
+    "backbone": "LeNet",
     "batch_size": 64,
     "epochs": 5,
     "lr": 0.001,
     "embedding_dim": 128,
     "margin": 1.0,
     "optimizer": "adam",
-    "device": "AMD",
+    "device": "cuda",
     "save_path": "models/"
 }

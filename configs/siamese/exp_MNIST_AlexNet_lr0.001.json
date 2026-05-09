@@ -9,6 +9,6 @@
     "embedding_dim": 128,
     "margin": 1.0,
     "optimizer": "adam",
-    "device": "cuda",
+    "device": "AMD",
     "save_path": "models/"
 }

@@ -1,14 +1,14 @@
 {
     "dataset": "CIFAR10",
     "image_channels": 3,
-    "model": "siamese",
+    "model": "triplet",
     "backbone": "AlexNet",
     "batch_size": 64,
     "epochs": 5,
-    "lr": 0.0001,
+    "lr": 0.001,
     "embedding_dim": 128,
     "margin": 1.0,
     "optimizer": "adam",
-    "device": "AMD",
+    "device": "amd",
     "save_path": "models/"
 }
