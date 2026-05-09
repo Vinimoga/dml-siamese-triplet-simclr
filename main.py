@@ -13,36 +13,7 @@ from models import MLP, LeNet, AlexNet, TripletNetwork, SiameseNetwork, SimCLRNe
 from loss import ContrastiveLoss
 from trainer import train
 from Evaluations import evaluate_embeddings
-
-def load_config(config_path):
-    with open(config_path, "r") as f:
-        config = json.load(f)
-    return config
-
-def get_base_dataset(name):
-    transform = transforms.Compose([
-        transforms.ToTensor()
-    ])
-
-    if name == "MNIST":
-        train_dataset = torchvision.datasets.MNIST(
-            root="./data", train=True, download=True, transform=transform
-        )
-        test_dataset = torchvision.datasets.MNIST(
-            root="./data", train=False, download=True, transform=transform
-        )
-    elif name == "CIFAR10":
-        train_dataset = torchvision.datasets.CIFAR10(
-            root="./data", train=True, download=True, transform=transform
-        )
-        test_dataset = torchvision.datasets.CIFAR10(
-            root="./data", train=False, download=True, transform=transform
-        )
-    else:
-        raise ValueError("Dataset não suportado")
-
-    return train_dataset, test_dataset
-
+from utils import *
 
 def run_experiment(config_path):
     print(f"\n[{datetime.now().strftime('%H:%M:%S')}] Iniciando experimento usando: {config_path}")
@@ -54,6 +25,16 @@ def run_experiment(config_path):
     device = config["device"]
     if device == "cuda" and not torch.cuda.is_available():
         device = "cpu"
+    
+    # Suporte para AMD (DirectML)
+    if device.lower() in ["dml", "amd"]:
+        try:
+            import torch_directml
+            device = torch_directml.device()
+            print(f"Usando GPU AMD via DirectML: {device}")
+        except ImportError:
+            print("Aviso: torch-directml não está instalado. Usando CPU em vez disso.")
+            device = torch.device("cpu")
 
     #dataset
     train_dataset, test_dataset = get_base_dataset(config["dataset"])
@@ -143,12 +124,6 @@ def run_experiment(config_path):
         device=device,
         experiment_dir=experiment_dir
     )
-
-    # #save
-    # save_path = config.get("save_path", "models/")
-    # os.makedirs(save_path, exist_ok=True)
-    # torch.save(model.backbone.state_dict(), f"{save_path}{model_type}_backbone.pth")
-    # torch.save(model.state_dict(), f"{experiment_dir}/model.pth")
     
     print(f"Experimento concluído. Resultados salvos em: {experiment_dir}\n")
 
