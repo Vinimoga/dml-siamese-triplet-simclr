@@ -18,11 +18,13 @@ from utils import *
 def run_experiment(config_path):
     print(f"\n[{datetime.now().strftime('%H:%M:%S')}] Iniciando experimento usando: {config_path}")
 
+    set_seed(42)
+
     #configs
     config = load_config(config_path)
 
     #device
-    device = config["device"]
+    device = config["device"].lower()
     if device == "cuda" and not torch.cuda.is_available():
         device = "cpu"
     
